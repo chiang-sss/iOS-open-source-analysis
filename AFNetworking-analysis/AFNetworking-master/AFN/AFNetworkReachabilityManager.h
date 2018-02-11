@@ -24,6 +24,15 @@
 #if !TARGET_OS_WATCH
 #import <SystemConfiguration/SystemConfiguration.h>
 
+
+/**
+ 网络状态，在AFN中，分了四个状态
+
+ - AFNetworkReachabilityStatusUnknown:          未知网络
+ - AFNetworkReachabilityStatusNotReachable:     没有网络
+ - AFNetworkReachabilityStatusReachableViaWWAN: 手机自带网络
+ - AFNetworkReachabilityStatusReachableViaWiFi: wifi网络
+ */
 typedef NS_ENUM(NSInteger, AFNetworkReachabilityStatus) {
     AFNetworkReachabilityStatusUnknown          = -1,
     AFNetworkReachabilityStatusNotReachable     = 0,
@@ -44,25 +53,50 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface AFNetworkReachabilityManager : NSObject
 
+
+/**
+ networkReachabilityStatus  :   网络状态
+ reachable                  :   网络是否可用
+ reachableViaWWAN           :   网络是否是手机网络
+ reachableViaWiFi           :   网络是否是wifi
+ 这四个属性,每一个属性都是readonly, 说明使用者无法去更改状态，只能通过getter方法去获取相应的状态
+ */
+
 /**
  The current network reachability status.
+ */
+
+/**
+ 当前网络状态
  */
 @property (readonly, nonatomic, assign) AFNetworkReachabilityStatus networkReachabilityStatus;
 
 /**
  Whether or not the network is currently reachable.
  */
+
+/**
+ 当前网络是否处于可访问的状态
+ */
 @property (readonly, nonatomic, assign, getter = isReachable) BOOL reachable;
 
 /**
  Whether or not the network is currently reachable via WWAN.
+ */
+
+/**
+ 当前网络是否是手机自带网络
  */
 @property (readonly, nonatomic, assign, getter = isReachableViaWWAN) BOOL reachableViaWWAN;
 
 /**
  Whether or not the network is currently reachable via WiFi.
  */
+/**
+ 当前网络是否是wifi
+ */
 @property (readonly, nonatomic, assign, getter = isReachableViaWiFi) BOOL reachableViaWiFi;
+
 
 ///---------------------
 /// @name Initialization
@@ -112,6 +146,13 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  @return nil as this method is unavailable
  */
+
+/**
+ init方法已经在实现类中，return nil;
+ 说明这个方法，按作者的方式，不能用init去初始化，只能通过单例或者initWithReachability去获取对象
+
+ @return <#return value description#>
+ */
 - (nullable instancetype)init NS_UNAVAILABLE;
 
 ///--------------------------------------------------
@@ -121,10 +162,18 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  Starts monitoring for changes in network reachability status.
  */
+
+/**
+ 开始对网络状态的监控
+ */
 - (void)startMonitoring;
 
 /**
  Stops monitoring for changes in network reachability status.
+ */
+
+/**
+ 停止对网络状态的监控
  */
 - (void)stopMonitoring;
 
@@ -145,6 +194,19 @@ NS_ASSUME_NONNULL_BEGIN
  Sets a callback to be executed when the network availability of the `baseURL` host changes.
 
  @param block A block object to be executed when the network availability of the `baseURL` host changes.. This block has no return value and takes a single argument which represents the various reachability states from the device to the `baseURL`.
+ */
+
+/**
+ AFNetworking中，监听网络状态的方式有两种：
+ 1. 使用Block进行回调
+ 2. 使用通知
+ 
+ */
+
+/**
+ 设置网络状态回调方法
+
+ @param block 网络状态回调的block
  */
 - (void)setReachabilityStatusChangeBlock:(nullable void (^)(AFNetworkReachabilityStatus status))block;
 
@@ -196,6 +258,9 @@ NS_ASSUME_NONNULL_BEGIN
  This notification assigns no notification object. The `userInfo` dictionary contains an `NSNumber` object under the `AFNetworkingReachabilityNotificationStatusItem` key, representing the `AFNetworkReachabilityStatus` value for the current network reachability.
 
  @warning In order for network reachability to be monitored, include the `SystemConfiguration` framework in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (`Prefix.pch`).
+ */
+/*
+ FOUNDATION_EXPORT 和#define 都能定义常量。FOUNDATION_EXPORT 能够使用==进行判断，效率略高
  */
 FOUNDATION_EXPORT NSString * const AFNetworkingReachabilityDidChangeNotification;
 FOUNDATION_EXPORT NSString * const AFNetworkingReachabilityNotificationStatusItem;

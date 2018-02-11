@@ -71,7 +71,6 @@
  @warning Managers for background sessions must be owned for the duration of their use. This can be accomplished by creating an application-wide or shared singleton instance.
  */
 
-
 NS_ASSUME_NONNULL_BEGIN
 
 @interface AFHTTPSessionManager : AFURLSessionManager <NSSecureCoding, NSCopying>
@@ -110,9 +109,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Creates and returns an `AFHTTPSessionManager` object.
- 
- 创建一个sessionManager.
- 底部使用的是单例
  */
 + (instancetype)manager;
 
@@ -151,6 +147,26 @@ NS_ASSUME_NONNULL_BEGIN
  @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
 
  @see -dataTaskWithRequest:completionHandler:
+ */
+
+/**
+
+ DEPRECATED_ATTRIBUTE: 已经方法已经过期，但也可以使用
+ 
+ @param URLString  请求地址
+ @param parameters 请求参数
+ @param success    成功回调
+ @param failure    失败回调
+
+ @return NSURLSessionDataTask对象
+ 
+ NSURLSessionDataTask 是 NSURLSessionTask 的子类，是一个具体的 网络请求（task） 类
+ 可以让开启任务，也可以取消任务
+ [task resume];
+ [task cancel];
+ 
+ NSURLSessionTaskState : 获取请求的状态
+ 
  */
 - (nullable NSURLSessionDataTask *)GET:(NSString *)URLString
                    parameters:(nullable id)parameters

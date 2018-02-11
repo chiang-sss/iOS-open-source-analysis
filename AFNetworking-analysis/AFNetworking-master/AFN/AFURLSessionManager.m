@@ -479,7 +479,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
         return nil;
     }
 
-    if (!configuration) {
+    if (!configuration) {   /// 如果没有设置configuration,则使用默认的
         configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
     }
 
@@ -490,9 +490,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
     self.session = [NSURLSession sessionWithConfiguration:self.sessionConfiguration delegate:self delegateQueue:self.operationQueue];
 
-    self.responseSerializer = [AFJSONResponseSerializer serializer];
-
-    self.securityPolicy = [AFSecurityPolicy defaultPolicy];
+    self.responseSerializer = [AFJSONResponseSerializer serializer];    /// 默认使用 JSON格式
+    
+    self.securityPolicy = [AFSecurityPolicy defaultPolicy];     /// 设置默认的Https策略
 
 #if !TARGET_OS_WATCH
     self.reachabilityManager = [AFNetworkReachabilityManager sharedManager];

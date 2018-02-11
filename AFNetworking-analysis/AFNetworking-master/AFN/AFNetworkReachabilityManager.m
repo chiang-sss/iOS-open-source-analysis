@@ -28,11 +28,29 @@
 #import <ifaddrs.h>
 #import <netdb.h>
 
+/**
+ 网络状态改变的通知
+ */
 NSString * const AFNetworkingReachabilityDidChangeNotification = @"com.alamofire.networking.reachability.change";
+/**
+ 网络状态改变的时候，会把当前的状态信息传给我们的用户，通过这个key去取相应的值
+ */
 NSString * const AFNetworkingReachabilityNotificationStatusItem = @"AFNetworkingReachabilityNotificationStatusItem";
 
+
+/**
+ 网络状态改变的block
+ */
 typedef void (^AFNetworkReachabilityStatusBlock)(AFNetworkReachabilityStatus status);
 
+
+/**
+ 把状态转换成本地string串
+
+ @param status 网络状态
+
+ @return 网络状态对应的字串
+ */
 NSString * AFStringFromNetworkReachabilityStatus(AFNetworkReachabilityStatus status) {
     switch (status) {
         case AFNetworkReachabilityStatusNotReachable:
@@ -46,16 +64,42 @@ NSString * AFStringFromNetworkReachabilityStatus(AFNetworkReachabilityStatus sta
             return NSLocalizedStringFromTable(@"Unknown", @"AFNetworking", nil);
     }
 }
-
+/**
+ *  根据SCNetworkReachabilityFlags标记转换成我们开发中经常碰到的网络状态
+ *  1.无法连接网络
+ *  2.蜂窝网络
+ *  3.Wifi网络
+ *  4.未知网络
+ *
+ 正常开发中，会有很多种状态，比如已联网而网络受限，正常就是连上了wifi,而路由器却没有联上网，正常开发中，我们会ping一下ip,是否可以连出来
+ */
 static AFNetworkReachabilityStatus AFNetworkReachabilityStatusForFlags(SCNetworkReachabilityFlags flags) {
+    
+    /// 普通的联网，说是连上网络，也可以访问数据
+    /// 但在真实开发中，会有两种状态，
+    /// 1. 网络连接但是无法请求到数据 (说明用户的网络还是受限的)
+    /// 2. 网络连接并且能请求到数据
+    //  这里本人还没有测试过，需要进行两种状态再下决定 ，到底这里取出来的是啥
+    
+    /// 是否能够到达
     BOOL isReachable = ((flags & kSCNetworkReachabilityFlagsReachable) != 0);
+    
+    //// 是否能够连接网络, 如果有连接网络，首先得建立连接过程
     BOOL needsConnection = ((flags & kSCNetworkReachabilityFlagsConnectionRequired) != 0);
+    
+    /// 是否是可以自动连接
     BOOL canConnectionAutomatically = (((flags & kSCNetworkReachabilityFlagsConnectionOnDemand ) != 0) || ((flags & kSCNetworkReachabilityFlagsConnectionOnTraffic) != 0));
+    
+    /// 在没有用户手动设置的前提下,网络是否可以连接
     BOOL canConnectWithoutUserInteraction = (canConnectionAutomatically && (flags & kSCNetworkReachabilityFlagsInterventionRequired) == 0);
+    
+    /// 是否联网
+    /// 通过是否网络能到达  / ( 网络能够连接 || 不要用户来设置就能连接网络)
+    /// 只能网络能到达 且 网络能够连接  才能判断网络状态可以用
     BOOL isNetworkReachable = (isReachable && (!needsConnection || canConnectWithoutUserInteraction));
 
     AFNetworkReachabilityStatus status = AFNetworkReachabilityStatusUnknown;
-    if (isNetworkReachable == NO) {
+    if (isNetworkReachable == NO) { /// 网络状态不能用
         status = AFNetworkReachabilityStatusNotReachable;
     }
 #if	TARGET_OS_IPHONE
@@ -78,12 +122,25 @@ static AFNetworkReachabilityStatus AFNetworkReachabilityStatusForFlags(SCNetwork
  * a queued notification (for an earlier status condition) is processed after
  * the later update, resulting in the listener being left in the wrong state.
  */
+
+/**
+ 传递网络状态
+ 1. Block
+ 2. 通知
+
+ 统一回调数据的方法
+ 
+ @param flags 网络状态标识
+ @param block block回调
+ */
 static void AFPostReachabilityStatusChange(SCNetworkReachabilityFlags flags, AFNetworkReachabilityStatusBlock block) {
     AFNetworkReachabilityStatus status = AFNetworkReachabilityStatusForFlags(flags);
+    
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (block) {
+        if (block) {    /// block回调数据
             block(status);
         }
+        /// 通知回调数据
         NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
         NSDictionary *userInfo = @{ AFNetworkingReachabilityNotificationStatusItem: @(status) };
         [notificationCenter postNotificationName:AFNetworkingReachabilityDidChangeNotification object:nil userInfo:userInfo];
@@ -158,14 +215,18 @@ static void AFNetworkReachabilityReleaseCallback(const void *info) {
     return [self managerForAddress:&address];
 }
 
+
+/**
+ 初始化相应的属性
+ */
 - (instancetype)initWithReachability:(SCNetworkReachabilityRef)reachability {
     self = [super init];
     if (!self) {
         return nil;
     }
 
-    _networkReachability = CFRetain(reachability);
-    self.networkReachabilityStatus = AFNetworkReachabilityStatusUnknown;
+    _networkReachability = CFRetain(reachability);  /// 初始化状态
+    self.networkReachabilityStatus = AFNetworkReachabilityStatusUnknown;    /// 设置网络状态为未知
 
     return self;
 }
@@ -185,20 +246,32 @@ static void AFNetworkReachabilityReleaseCallback(const void *info) {
 
 #pragma mark -
 
+/**
+ 网络是否可达
+ */
 - (BOOL)isReachable {
     return [self isReachableViaWWAN] || [self isReachableViaWiFi];
 }
 
+/**
+ 是不是蜂窝网络
+ */
 - (BOOL)isReachableViaWWAN {
     return self.networkReachabilityStatus == AFNetworkReachabilityStatusReachableViaWWAN;
 }
 
+/**
+ 是否是wifi联网
+ */
 - (BOOL)isReachableViaWiFi {
     return self.networkReachabilityStatus == AFNetworkReachabilityStatusReachableViaWiFi;
 }
 
 #pragma mark -
 
+/**
+ 开启对网络状态的监控
+ */
 - (void)startMonitoring {
     [self stopMonitoring];
 

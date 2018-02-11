@@ -87,14 +87,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/**
- 
- AFURLSessionManager:  网络管理类.
- AFN3.0 是基于NSURLSession来封装,内部使用的还是。
- 所以这个类围绕着NSURLSession做了一系列的封装。
- 
- */
-
 @interface AFURLSessionManager : NSObject <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate, NSSecureCoding, NSCopying>
 
 /**

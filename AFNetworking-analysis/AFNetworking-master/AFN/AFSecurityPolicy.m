@@ -306,6 +306,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
 #pragma mark - NSSecureCoding
 
+
 + (BOOL)supportsSecureCoding {
     return YES;
 }

@@ -66,20 +66,22 @@
 - (instancetype)initWithBaseURL:(NSURL *)url
            sessionConfiguration:(NSURLSessionConfiguration *)configuration
 {
+    /// 调用父类的 initWithSessionConfiguration
     self = [super initWithSessionConfiguration:configuration];
     if (!self) {
         return nil;
     }
 
     // Ensure terminal slash for baseURL path, so that NSURL +URLWithString:relativeToURL: works as expected
+    /// 如果url的路径长度大于0 并且 url最后一位字符不是 / ，会进入这个if判断
     if ([[url path] length] > 0 && ![[url absoluteString] hasSuffix:@"/"]) {
         url = [url URLByAppendingPathComponent:@""];
     }
 
-    self.baseURL = url;
+    self.baseURL = url; /// baseUrl改成当前url
 
-    self.requestSerializer = [AFHTTPRequestSerializer serializer];
-    self.responseSerializer = [AFJSONResponseSerializer serializer];
+    self.requestSerializer = [AFHTTPRequestSerializer serializer];      /// 默认为 请求序列对象
+    self.responseSerializer = [AFJSONResponseSerializer serializer];    /// 默认为 JSON格式返回数据
 
     return self;
 }
@@ -87,6 +89,10 @@
 #pragma mark -
 
 - (void)setRequestSerializer:(AFHTTPRequestSerializer <AFURLRequestSerialization> *)requestSerializer {
+    /**
+     NSParameterAssert: 在开发环境中经常被使用，调试和验证代码参数的完整性，断言为真，
+                        则表明程序运行正常，而断言为假，则意味着它已经在代码中发现了意料之外的错误。
+     */
     NSParameterAssert(requestSerializer);
 
     _requestSerializer = requestSerializer;
