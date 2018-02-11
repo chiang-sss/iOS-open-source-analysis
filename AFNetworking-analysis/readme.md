@@ -8,3 +8,6 @@ Source:		里面放的是AFNetworking中使用到的技术介绍
 
 
 
+如果有违规，请联系我删除。旨在学习。
+
+If there is a violation, please contact me. I will remove it. Thanks
