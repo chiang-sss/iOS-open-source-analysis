@@ -31,9 +31,11 @@
 #import <Cocoa/Cocoa.h>
 #endif
 
+/** 提示网络请求错误使用的Key    **/
 NSString * const AFURLResponseSerializationErrorDomain = @"com.alamofire.error.serialization.response";
 NSString * const AFNetworkingOperationFailingURLResponseErrorKey = @"com.alamofire.serialization.response.error.response";
 NSString * const AFNetworkingOperationFailingURLResponseDataErrorKey = @"com.alamofire.serialization.response.error.data";
+
 
 static NSError * AFErrorWithUnderlyingError(NSError *error, NSError *underlyingError) {
     if (!error) {
@@ -60,20 +62,40 @@ static BOOL AFErrorOrUnderlyingErrorHasCodeInDomain(NSError *error, NSInteger co
     return NO;
 }
 
+/**  
+ AFNetworking的自动解析，去除掉值为null的键值对
+ 个人觉得，这里还可以进行相应的,NSNull处理成空串处理,根据自身项目情况
+ 
+ **/
 static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingOptions readingOptions) {
-    if ([JSONObject isKindOfClass:[NSArray class]]) {
+    
+    /**  这是一个递归处理的方法，如果是Array则会再循环调用此方法   **/
+    
+    if ([JSONObject isKindOfClass:[NSArray class]]) {   /// Array数组处理
+        
         NSMutableArray *mutableArray = [NSMutableArray arrayWithCapacity:[(NSArray *)JSONObject count]];
+        
         for (id value in (NSArray *)JSONObject) {
             [mutableArray addObject:AFJSONObjectByRemovingKeysWithNullValues(value, readingOptions)];
         }
 
         return (readingOptions & NSJSONReadingMutableContainers) ? mutableArray : [NSArray arrayWithArray:mutableArray];
-    } else if ([JSONObject isKindOfClass:[NSDictionary class]]) {
+    } else if ([JSONObject isKindOfClass:[NSDictionary class]]) {   /// Dictionary字典处理
+        
         NSMutableDictionary *mutableDictionary = [NSMutableDictionary dictionaryWithDictionary:JSONObject];
         for (id <NSCopying> key in [(NSDictionary *)JSONObject allKeys]) {
             id value = (NSDictionary *)JSONObject[key];
             if (!value || [value isEqual:[NSNull null]]) {
+                /**
+                 当获取到的value为NSNull,则会移除该key
+                 **/
+                
                 [mutableDictionary removeObjectForKey:key];
+                /**
+                 当获取到的value为NSNull,则会将Value给予空串
+                 **/
+//                [mutableDictionary setValue:@"" forKey:(NSString *)key];
+                
             } else if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSDictionary class]]) {
                 mutableDictionary[key] = AFJSONObjectByRemovingKeysWithNullValues(value, readingOptions);
             }
@@ -84,6 +106,8 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
     return JSONObject;
 }
+
+
 
 @implementation AFHTTPResponseSerializer
 
@@ -97,7 +121,16 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /**  
+     默认父类中，返回正确的Status Code在100 - 200之间
+     
+     Http Code状态码定义，参考协议rfc2616:
+     
+     https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+     **/
     self.acceptableStatusCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
+    
+    /**  客户端能接收的ContentTypes取决于每一个实现的子类   **/
     self.acceptableContentTypes = nil;
 
     return self;
@@ -105,6 +138,18 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 #pragma mark -
 
+
+/**
+ 验证返回的数据是否有效,也就是数据的合法校验
+
+ 主要是通过验证MIMEType（数据类型），StatusCode（状态码：2xx为成功状态）是否满足条件来判断网络返回的数据是否有效，
+ 
+ @param response response
+ @param data     data
+ @param error    error
+
+ @return 数据是否有效
+ */
 - (BOOL)validateResponse:(NSHTTPURLResponse *)response
                     data:(NSData *)data
                    error:(NSError * __autoreleasing *)error
@@ -112,7 +157,13 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     BOOL responseIsValid = YES;
     NSError *validationError = nil;
 
-    if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+    /** 判断MineType是否可以接收 **/
+    if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {   /// 先判断是否是NSHTTPURLResponse类
+        
+        
+        /** 
+            每个子类都会有一个acceptableContentTypes集合的概念，判断response返回的MIMEType是否在当前可接受的集合中如果没有，会有错误提示
+         **/
         if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]] &&
             !([response MIMEType] == nil && [data length] == 0)) {
 
@@ -132,6 +183,16 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
             responseIsValid = NO;
         }
 
+        
+        /** 
+         
+         判断acceptableStatusCodes是否是2xx成功状态
+         
+         Http Code状态码定义，参考协议rfc2616:
+         
+         https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+         
+         **/
         if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) {
             NSMutableDictionary *mutableUserInfo = [@{
                                                NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%ld)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], (long)response.statusCode],
@@ -162,6 +223,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                            data:(NSData *)data
                           error:(NSError *__autoreleasing *)error
 {
+    /// TODO:
     [self validateResponse:(NSHTTPURLResponse *)response data:data error:error];
 
     return data;
@@ -202,8 +264,12 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 @end
 
-#pragma mark -
+#pragma mark -  AFJSONResponseSerializer
 
+/**
+ AFJSONResponseSerializer
+ JSON序列器
+ **/
 @implementation AFJSONResponseSerializer
 
 + (instancetype)serializer {
@@ -223,6 +289,10 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /** 
+        本地可接受服务器返回的数据格式
+        平常服务器还会有text/html，所以在实际开发中，我们会扩展这个集合数据
+     **/
     self.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript", nil];
 
     return self;
@@ -235,6 +305,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                           error:(NSError *__autoreleasing *)error
 {
     if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        /// 判断数据是否有效
         if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
             return nil;
         }
@@ -242,6 +313,11 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
     // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
     // See https://github.com/rails/rails/issues/1742
+    
+    /**
+     Status Code返回200,但是body数据为空,也就是返回一个空串,且空串内容只有一个空格,处理这么一个问题。
+     如果在我返回的时候，多加几个空格，则这里就直接过掉了
+    **/
     BOOL isSpace = [data isEqualToData:[NSData dataWithBytes:" " length:1]];
     
     if (data.length == 0 || isSpace) {
@@ -254,6 +330,9 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
     if (!responseObject)
     {
+        /**
+         如果responseObject反序列化出来的数据为空，代表肯定是反序列化出错了，则封装error信息
+         **/
         if (error) {
             *error = AFErrorWithUnderlyingError(serializationError, *error);
         }
@@ -261,6 +340,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     }
     
     if (self.removesKeysWithNullValues) {
+        /// AFNetworking的自动解析，去除掉值为null的键值对,默认是不开启
         return AFJSONObjectByRemovingKeysWithNullValues(responseObject, self.readingOptions);
     }
 
@@ -300,7 +380,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 @end
 
-#pragma mark -
+#pragma mark - AFXMLParserResponseSerializer
 
 @implementation AFXMLParserResponseSerializer
 
@@ -424,7 +504,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 #endif
 
-#pragma mark -
+#pragma mark - AFPropertyListResponseSerializer
 
 @implementation AFPropertyListResponseSerializer
 
@@ -746,7 +826,7 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
 
 @end
 
-#pragma mark -
+#pragma mark - AFCompoundResponseSerializer
 
 @interface AFCompoundResponseSerializer ()
 @property (readwrite, nonatomic, copy) NSArray *responseSerializers;
