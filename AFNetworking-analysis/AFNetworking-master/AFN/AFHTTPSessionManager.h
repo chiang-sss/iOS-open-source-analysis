@@ -148,26 +148,6 @@ NS_ASSUME_NONNULL_BEGIN
 
  @see -dataTaskWithRequest:completionHandler:
  */
-
-/**
-
- DEPRECATED_ATTRIBUTE: 已经方法已经过期，但也可以使用
- 
- @param URLString  请求地址
- @param parameters 请求参数
- @param success    成功回调
- @param failure    失败回调
-
- @return NSURLSessionDataTask对象
- 
- NSURLSessionDataTask 是 NSURLSessionTask 的子类，是一个具体的 网络请求（task） 类
- 可以让开启任务，也可以取消任务
- [task resume];
- [task cancel];
- 
- NSURLSessionTaskState : 获取请求的状态
- 
- */
 - (nullable NSURLSessionDataTask *)GET:(NSString *)URLString
                    parameters:(nullable id)parameters
                       success:(nullable void (^)(NSURLSessionDataTask *task, id _Nullable responseObject))success

@@ -66,22 +66,20 @@
 - (instancetype)initWithBaseURL:(NSURL *)url
            sessionConfiguration:(NSURLSessionConfiguration *)configuration
 {
-    /// 调用父类的 initWithSessionConfiguration
     self = [super initWithSessionConfiguration:configuration];
     if (!self) {
         return nil;
     }
 
     // Ensure terminal slash for baseURL path, so that NSURL +URLWithString:relativeToURL: works as expected
-    /// 如果url的路径长度大于0 并且 url最后一位字符不是 / ，会进入这个if判断
     if ([[url path] length] > 0 && ![[url absoluteString] hasSuffix:@"/"]) {
         url = [url URLByAppendingPathComponent:@""];
     }
 
-    self.baseURL = url; /// baseUrl改成当前url
+    self.baseURL = url;
 
-    self.requestSerializer = [AFHTTPRequestSerializer serializer];      /// 默认为 请求序列对象
-    self.responseSerializer = [AFJSONResponseSerializer serializer];    /// 默认为 JSON格式返回数据
+    self.requestSerializer = [AFHTTPRequestSerializer serializer];
+    self.responseSerializer = [AFJSONResponseSerializer serializer];
 
     return self;
 }
@@ -89,10 +87,6 @@
 #pragma mark -
 
 - (void)setRequestSerializer:(AFHTTPRequestSerializer <AFURLRequestSerialization> *)requestSerializer {
-    /**
-     NSParameterAssert: 在开发环境中经常被使用，调试和验证代码参数的完整性，断言为真，
-                        则表明程序运行正常，而断言为假，则意味着它已经在代码中发现了意料之外的错误。
-     */
     NSParameterAssert(requestSerializer);
 
     _requestSerializer = requestSerializer;
@@ -107,6 +101,9 @@
 @dynamic securityPolicy;
 
 - (void)setSecurityPolicy:(AFSecurityPolicy *)securityPolicy {
+    /**
+     数据检验，如果使用https协议时，是否设置了
+     */
     if (securityPolicy.SSLPinningMode != AFSSLPinningModeNone && ![self.baseURL.scheme isEqualToString:@"https"]) {
         NSString *pinningMode = @"Unknown Pinning Mode";
         switch (securityPolicy.SSLPinningMode) {
@@ -131,6 +128,7 @@
 
     return [self GET:URLString parameters:parameters progress:nil success:success failure:failure];
 }
+
 
 - (NSURLSessionDataTask *)GET:(NSString *)URLString
                    parameters:(id)parameters
@@ -270,6 +268,21 @@
     return dataTask;
 }
 
+
+/**
+ 统一调用的方法,使用这个方法，进行数据请求
+ GET/DELETE/PUT等只不过在上面method传相应的字串就行了
+
+ @param method           请求类型 GET/PUT/DELETE
+ @param URLString        url地址
+ @param parameters       参烽
+ @param uploadProgress   上传回调
+ @param downloadProgress 下载回调
+ @param success          成功回调
+ @param failure          失败回调
+
+ @return 返回SessionDataTask对象，外界可以resume或者cancel
+ */
 - (NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method
                                        URLString:(NSString *)URLString
                                       parameters:(id)parameters
@@ -279,9 +292,20 @@
                                          failure:(void (^)(NSURLSessionDataTask *, NSError *))failure
 {
     NSError *serializationError = nil;
+    /**
+        通过方法名，请求数据等获取一个request对象
+     **/
     NSMutableURLRequest *request = [self.requestSerializer requestWithMethod:method URLString:[[NSURL URLWithString:URLString relativeToURL:self.baseURL] absoluteString] parameters:parameters error:&serializationError];
     if (serializationError) {
+        /**
+            如果serializationError在创建reuqest时，有数据，代表request创建失败,则直接执行failure的block
+            并且，task对象，也返回nil
+         **/
         if (failure) {
+            
+            /**
+             self.completionQueue,这个是我们自定义的，这个是一个GCD的Queue如果设置了那么从这个Queue中回调结果，否则从主队列回调
+             **/
             dispatch_async(self.completionQueue ?: dispatch_get_main_queue(), ^{
                 failure(nil, serializationError);
             });

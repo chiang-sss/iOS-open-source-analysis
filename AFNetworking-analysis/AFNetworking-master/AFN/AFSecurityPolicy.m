@@ -169,11 +169,8 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
     return _defaultPinnedCertificates;
 }
 
-/// 单例获取默认的全局
 + (instancetype)defaultPolicy {
     AFSecurityPolicy *securityPolicy = [[self alloc] init];
-    /// AFSSLPinningModeNone: 代表客户端无条件地信任服务器端返回的证书。
-    /// 也就是说，默认是都信任服务器返回的证书
     securityPolicy.SSLPinningMode = AFSSLPinningModeNone;
 
     return securityPolicy;
@@ -194,7 +191,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
 - (instancetype)init {
     self = [super init];
-    if (!self) {    /// 高端写法，如果self创建不出来，就返回nil
+    if (!self) {
         return nil;
     }
 
@@ -305,7 +302,6 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 }
 
 #pragma mark - NSSecureCoding
-
 
 + (BOOL)supportsSecureCoding {
     return YES;
