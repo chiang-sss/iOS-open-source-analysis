@@ -78,13 +78,32 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
 
 #pragma mark -
 
+
+/**
+ 自定义的Key Value对象
+ field  :   key属性
+ value  :   属性值
+ 
+ @{
+    @"username" :   @"chiang3s",
+    @"password" :   @"chiang3s",
+    @"families" :   @[@"father", @"mother", @"wife"]
+ }
+ 
+ 也就是说 username是field    chiang3s是value
+ 
+ 
+ */
 @interface AFQueryStringPair : NSObject
+
 @property (readwrite, nonatomic, strong) id field;
 @property (readwrite, nonatomic, strong) id value;
+
 
 - (instancetype)initWithField:(id)field value:(id)value;
 
 - (NSString *)URLEncodedStringValue;
+
 @end
 
 @implementation AFQueryStringPair
@@ -101,10 +120,22 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
     return self;
 }
 
+
+/**
+ 字串编码功能
+ */
 - (NSString *)URLEncodedStringValue {
     if (!self.value || [self.value isEqual:[NSNull null]]) {
+        
         return AFPercentEscapedStringFromString([self.field description]);
     } else {
+        /** 拼数据的操作
+            username=chiang3s&password=chiang3s  打个比方
+            AFPercentEscapedStringFromString则会对我们传进去的field value进行相应的数据编码
+         
+            RFC3986之URL编码与解码:   http://blog.csdn.net/qq_32010299/article/details/51790407
+         
+        **/
         return [NSString stringWithFormat:@"%@=%@", AFPercentEscapedStringFromString([self.field description]), AFPercentEscapedStringFromString([self.value description])];
     }
 }
@@ -238,8 +269,14 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     }
 
     // HTTP Method Definitions; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
+    
+    /** 
+        设置HTTPMethodsEncodingParametersInURI的默认集合数据
+        GET/HEAD/DELETE    : 参数拼在url后面
+     **/
     self.HTTPMethodsEncodingParametersInURI = [NSSet setWithObjects:@"GET", @"HEAD", @"DELETE", nil];
 
+    /**  每次mutableObservedChangedKeyPaths的数据都会重新初始化   **/
     self.mutableObservedChangedKeyPaths = [NSMutableSet set];
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
         if ([self respondsToSelector:NSSelectorFromString(keyPath)]) {
@@ -367,7 +404,17 @@ forHTTPHeaderField:(NSString *)field
     NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
     mutableRequest.HTTPMethod = method;
 
+    /**
+     AFHTTPRequestSerializerObservedKeyPaths里面的值,注释在这里
+        allowsCellularAccess,
+        cachePolicy,
+        HTTPShouldHandleCookies,
+        HTTPShouldUsePipelining,
+        networkServiceType,
+        timeoutInterval
+     **/
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
+        /// 观察自己,是否发生改变的属性，在AFHTTPRequestSerializerObservedKeyPaths里面存在,如果存在，则改变值
         if ([self.mutableObservedChangedKeyPaths containsObject:keyPath]) {
             [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
         }
@@ -471,6 +518,19 @@ forHTTPHeaderField:(NSString *)field
 
 #pragma mark - AFURLRequestSerialization
 
+
+
+/**
+ 
+ 进行数据的url拼接且数据进行编码
+
+ @param request    request对象
+ @param parameters 参数
+ @param error      error对象
+
+ @return 返回一个新的request对象
+ 
+ */
 - (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
                                withParameters:(id)parameters
                                         error:(NSError *__autoreleasing *)error
@@ -507,6 +567,9 @@ forHTTPHeaderField:(NSString *)field
         }
     }
 
+    /** 
+     HTTPMethodsEncodingParametersInURI: GET, HEAD, DELETE  这三类的值都是拼接在url后面
+     */
     if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
         if (query && query.length > 0) {
             mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
@@ -517,6 +580,7 @@ forHTTPHeaderField:(NSString *)field
             query = @"";
         }
         if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
+            /// Content-Type如果不存在，则默认就是 application/x-www-form-urlencoded
             [mutableRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
         }
         [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
