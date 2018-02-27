@@ -24,6 +24,9 @@
 #import <AssertMacros.h>
 
 #if !TARGET_OS_IOS && !TARGET_OS_WATCH && !TARGET_OS_TV
+/**
+    根据Key获取相应的NSData数据
+ **/
 static NSData * AFSecKeyGetData(SecKeyRef key) {
     CFDataRef data = NULL;
 
@@ -40,6 +43,14 @@ _out:
 }
 #endif
 
+/**
+ 比较两个Key是否相同
+
+ @param key1 key1
+ @param key2 key2
+
+ @return 是  /   否
+ */
 static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 #if TARGET_OS_IOS || TARGET_OS_WATCH || TARGET_OS_TV
     return [(__bridge id)key1 isEqual:(__bridge id)key2];
@@ -48,6 +59,25 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 #endif
 }
 
+/** 
+    获取证书中的公钥信息
+ ① NSData *certificate -> CFDataRef -> (SecCertificateCreateWithData) -> SecCertificateRef allowedCertificate
+ 
+ ②判断SecCertificateRef allowedCertificate 是不是空，如果为空，直接跳转到后边的代码
+ 
+ ③allowedCertificate 保存在allowedCertificates数组中
+ 
+ ④allowedCertificates -> (CFArrayCreate) -> SecCertificateRef allowedCertificates[1]
+ 
+ ⑤根据函数SecPolicyCreateBasicX509() -> SecPolicyRef policy
+ 
+ ⑥SecTrustCreateWithCertificates(tempCertificates, policy, &allowedTrust) -> 生成SecTrustRef allowedTrust
+ 
+ ⑦SecTrustEvaluate(allowedTrust, &result) 校验证书
+ 
+ ⑧(__bridge_transfer id)SecTrustCopyPublicKey(allowedTrust) -> 得到公钥id allowedPublicKey
+ 
+ **/
 static id AFPublicKeyForCertificate(NSData *certificate) {
     id allowedPublicKey = nil;
     SecCertificateRef allowedCertificate;
@@ -55,13 +85,16 @@ static id AFPublicKeyForCertificate(NSData *certificate) {
     SecTrustRef allowedTrust = nil;
     SecTrustResultType result;
 
+    
     allowedCertificate = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificate);
     __Require_Quiet(allowedCertificate != NULL, _out);
 
+    
     policy = SecPolicyCreateBasicX509();
     __Require_noErr_Quiet(SecTrustCreateWithCertificates(allowedCertificate, policy, &allowedTrust), _out);
     __Require_noErr_Quiet(SecTrustEvaluate(allowedTrust, &result), _out);
 
+    
     allowedPublicKey = (__bridge_transfer id)SecTrustCopyPublicKey(allowedTrust);
 
 _out:
@@ -80,21 +113,30 @@ _out:
     return allowedPublicKey;
 }
 
+
 static BOOL AFServerTrustIsValid(SecTrustRef serverTrust) {
     BOOL isValid = NO;
     SecTrustResultType result;
     __Require_noErr_Quiet(SecTrustEvaluate(serverTrust, &result), _out);
 
+    // TODO:
     isValid = (result == kSecTrustResultUnspecified || result == kSecTrustResultProceed);
 
 _out:
     return isValid;
 }
 
+/**
+ 取出服务器返回的证书
+ 
+ **/
 static NSArray * AFCertificateTrustChainForServerTrust(SecTrustRef serverTrust) {
+    
+    /// 通过SecTrustRef来获取证书的个数
     CFIndex certificateCount = SecTrustGetCertificateCount(serverTrust);
+    /// 通过个数创建一个可变的数组
     NSMutableArray *trustChain = [NSMutableArray arrayWithCapacity:(NSUInteger)certificateCount];
-
+    
     for (CFIndex i = 0; i < certificateCount; i++) {
         SecCertificateRef certificate = SecTrustGetCertificateAtIndex(serverTrust, i);
         [trustChain addObject:(__bridge_transfer NSData *)SecCertificateCopyData(certificate)];
@@ -146,9 +188,18 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
 @implementation AFSecurityPolicy
 
+
+/**
+ 获取所有cer文件
+
+ @param bundle bundle路径
+
+ @return 所有cer文件的集合
+ */
 + (NSSet *)certificatesInBundle:(NSBundle *)bundle {
     NSArray *paths = [bundle pathsForResourcesOfType:@"cer" inDirectory:@"."];
 
+    
     NSMutableSet *certificates = [NSMutableSet setWithCapacity:[paths count]];
     for (NSString *path in paths) {
         NSData *certificateData = [NSData dataWithContentsOfFile:path];
@@ -169,8 +220,12 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
     return _defaultPinnedCertificates;
 }
 
+/// 单例获取默认的全局
 + (instancetype)defaultPolicy {
     AFSecurityPolicy *securityPolicy = [[self alloc] init];
+    
+    /// AFSSLPinningModeNone: 代表客户端无条件地信任服务器端返回的证书。
+    /// 也就是说，默认是都信任服务器返回的证书
     securityPolicy.SSLPinningMode = AFSSLPinningModeNone;
 
     return securityPolicy;
@@ -191,7 +246,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
 - (instancetype)init {
     self = [super init];
-    if (!self) {
+    if (!self) {    /// 高端写法，如果self创建不出来，就返回nil
         return nil;
     }
 
@@ -302,6 +357,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 }
 
 #pragma mark - NSSecureCoding
+
 
 + (BOOL)supportsSecureCoding {
     return YES;

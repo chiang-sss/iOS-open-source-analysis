@@ -78,7 +78,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         for (id value in (NSArray *)JSONObject) {
             [mutableArray addObject:AFJSONObjectByRemovingKeysWithNullValues(value, readingOptions)];
         }
-
+//        readingOptions == NSJSONReadingMutableContainers 返回可变容器，其他返回不可变容器
         return (readingOptions & NSJSONReadingMutableContainers) ? mutableArray : [NSArray arrayWithArray:mutableArray];
     } else if ([JSONObject isKindOfClass:[NSDictionary class]]) {   /// Dictionary字典处理
         
@@ -122,11 +122,13 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     }
 
     /**  
-     默认父类中，返回正确的Status Code在100 - 200之间
+     默认父类中，返回正确的Status Code在200 - 299 之间
      
      Http Code状态码定义，参考协议rfc2616:
      
      https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+     
+     NSIndexSet使用参考 : https://www.jianshu.com/p/84a1d5296844
      **/
     self.acceptableStatusCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
     
@@ -211,6 +213,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     }
 
     if (error && !responseIsValid) {
+        /// 如果responseIsValid有值的话，代表肯定是不合法，则把validationError赋值给error
         *error = validationError;
     }
 

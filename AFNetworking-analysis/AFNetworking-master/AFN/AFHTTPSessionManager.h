@@ -85,12 +85,20 @@ NS_ASSUME_NONNULL_BEGIN
 
  @warning `requestSerializer` must not be `nil`.
  */
+
+/**
+ 请求序列类
+ */
 @property (nonatomic, strong) AFHTTPRequestSerializer <AFURLRequestSerialization> * requestSerializer;
 
 /**
  Responses sent from the server in data tasks created with `dataTaskWithRequest:success:failure:` and run using the `GET` / `POST` / et al. convenience methods are automatically validated and serialized by the response serializer. By default, this property is set to an instance of `AFJSONResponseSerializer`.
 
  @warning `responseSerializer` must not be `nil`.
+ */
+
+/**
+ 响应序列类
  */
 @property (nonatomic, strong) AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 
@@ -100,6 +108,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  The security policy used by created session to evaluate server trust for secure connections. `AFURLSessionManager` uses the `defaultPolicy` unless otherwise specified. A security policy configured with `AFSSLPinningModePublicKey` or `AFSSLPinningModeCertificate` can only be applied on a session manager initialized with a secure base URL (i.e. https). Applying a security policy with pinning enabled on an insecure session manager throws an `Invalid Security Policy` exception.
+ */
+
+/**
+    证书验证的安全策略
  */
 @property (nonatomic, strong) AFSecurityPolicy *securityPolicy;
 
@@ -119,6 +131,14 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The newly-initialized HTTP client
  */
+
+/**
+ 初始化BaseURL,且在内部使用了默认的SessionConfiguration配置
+
+ @param url url
+
+ @return 返回AFHTTPSessionManager
+ */
 - (instancetype)initWithBaseURL:(nullable NSURL *)url;
 
 /**
@@ -130,6 +150,15 @@ NS_ASSUME_NONNULL_BEGIN
  @param configuration The configuration used to create the managed session.
 
  @return The newly-initialized HTTP client
+ */
+
+/**
+ 初始化BaseURL,可以自配SessionConfiguration
+
+ @param url           url
+ @param configuration SessionConfiguration
+
+ @return 返回AFHTTPSessionManager
  */
 - (instancetype)initWithBaseURL:(nullable NSURL *)url
            sessionConfiguration:(nullable NSURLSessionConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
@@ -150,14 +179,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /**
- 
+
  DEPRECATED_ATTRIBUTE: 已经方法已经过期，但也可以使用
  
  @param URLString  请求地址
  @param parameters 请求参数
  @param success    成功回调
  @param failure    失败回调
- 
+
  @return NSURLSessionDataTask对象
  
  NSURLSessionDataTask 是 NSURLSessionTask 的子类，是一个具体的 网络请求（task） 类
@@ -168,8 +197,6 @@ NS_ASSUME_NONNULL_BEGIN
  NSURLSessionTaskState : 获取请求的状态
  
  */
-
-
 - (nullable NSURLSessionDataTask *)GET:(NSString *)URLString
                    parameters:(nullable id)parameters
                       success:(nullable void (^)(NSURLSessionDataTask *task, id _Nullable responseObject))success
@@ -186,6 +213,10 @@ NS_ASSUME_NONNULL_BEGIN
  @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
 
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
+ */
+
+/**
+ GET请求，带进度
  */
 - (nullable NSURLSessionDataTask *)GET:(NSString *)URLString
                             parameters:(nullable id)parameters

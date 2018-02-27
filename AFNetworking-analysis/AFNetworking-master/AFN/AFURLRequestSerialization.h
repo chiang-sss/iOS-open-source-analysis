@@ -60,7 +60,25 @@ FOUNDATION_EXPORT NSString * AFQueryStringFromParameters(NSDictionary *parameter
 
  For example, a JSON request serializer may set the HTTP body of the request to a JSON representation, and set the `Content-Type` HTTP header field value to `application/json`.
  */
+
+/**
+ AFURLRequestSerialization: 作用，序列化一个Http请求
+ 
+ GET /nmapi/user/v1/login/loginconfig_ab=1203&_app=mgj&_at=ee60c6c24e4df4fa&_atype=iphone& HTTP/1.1
+ Host    www.chiang3s.com
+ User-Agent    Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36
+ Accept    image/webp
+ Referer    http://www.imooc.com/
+ Accept-Encoding    gzip, deflate, sdch
+ Accept-Language    zh-CN,zh;q=0.8
+                                   
+ 这里信息包括：请求方式（这里是GET），请求的URL ，HTTP的版本，Host， Accept, Cookie, User-Agent, Accept-Encoding,Connection,等，其中很大的一部分于AFURLRequestSerialization来帮开发者构建。一般我们进行一个GET请求时，我们所传递的请求参数是拼接在URL中的，这部分的完成同样也是由AFNetworking来帮我们完成。
+                                   
+ **/
 @protocol AFURLRequestSerialization <NSObject, NSSecureCoding, NSCopying>
+
+
+
 
 /**
  Returns a request with the specified parameters encoded into a copy of the original request.
@@ -93,17 +111,26 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPRequestSerializer` in order to ensure consistent default behavior.
  */
+
 @interface AFHTTPRequestSerializer : NSObject <AFURLRequestSerialization>
 
 /**
  The string encoding used to serialize parameters. `NSUTF8StringEncoding` by default.
  */
+
+/**
+ 返回参数编码的编码样式，默认为 NSUTF8StringEncoding
+ **/
 @property (nonatomic, assign) NSStringEncoding stringEncoding;
 
 /**
  Whether created requests can use the device’s cellular radio (if present). `YES` by default.
 
  @see NSMutableURLRequest -setAllowsCellularAccess:
+ */
+
+/**
+ 是否可以使用手机网络进行数据访问
  */
 @property (nonatomic, assign) BOOL allowsCellularAccess;
 
@@ -112,6 +139,10 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @see NSMutableURLRequest -setCachePolicy:
  */
+
+/**
+ 缓存策略
+ **/
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;
 
 /**
@@ -119,6 +150,10 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @see NSMutableURLRequest -setHTTPShouldHandleCookies:
  */
+
+/**
+ 是否对cookies进行默认处理  默认为YES
+ **/
 @property (nonatomic, assign) BOOL HTTPShouldHandleCookies;
 
 /**
@@ -126,6 +161,10 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @see NSMutableURLRequest -setHTTPShouldUsePipelining:
  */
+
+/**
+ 是否可以在上个数据传输完成后继续传输数据,默认是NO
+ **/
 @property (nonatomic, assign) BOOL HTTPShouldUsePipelining;
 
 /**
@@ -133,6 +172,7 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @see NSMutableURLRequest -setNetworkServiceType:
  */
+
 @property (nonatomic, assign) NSURLRequestNetworkServiceType networkServiceType;
 
 /**
@@ -140,6 +180,10 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @see NSMutableURLRequest -setTimeoutInterval:
  */
+
+/**
+ 超时时长   默认为60s
+ **/
 @property (nonatomic, assign) NSTimeInterval timeoutInterval;
 
 ///---------------------------------------
@@ -154,6 +198,12 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  @discussion To add or remove default request headers, use `setValue:forHTTPHeaderField:`.
  */
+
+/**
+ 请求头集合数据
+ 只能通过setValue设置请求头数据
+ 默认包含 Accept-Language 和 User-Agent
+ **/
 @property (readonly, nonatomic, strong) NSDictionary <NSString *, NSString *> *HTTPRequestHeaders;
 
 /**
@@ -167,6 +217,13 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
  @param field The HTTP header to set a default value for
  @param value The value set as default for the specified header, or `nil`
  */
+
+/**
+ 设置HTTP Header
+
+ @param value 值
+ @param field 字段
+ */
 - (void)setValue:(nullable NSString *)value
 forHTTPHeaderField:(NSString *)field;
 
@@ -177,6 +234,14 @@ forHTTPHeaderField:(NSString *)field;
 
  @return The value set as default for the specified header, or `nil`
  */
+
+/**
+ 通过filed获取相应的Header值
+
+ @param field 字段
+
+ @return 值
+ */
 - (nullable NSString *)valueForHTTPHeaderField:(NSString *)field;
 
 /**
@@ -184,6 +249,15 @@ forHTTPHeaderField:(NSString *)field;
 
  @param username The HTTP basic auth username
  @param password The HTTP basic auth password
+ */
+
+/**
+ 如果网站是401等，需要你通过一些验证的手段
+ 比如Basic最基本的验证
+ 需要有用户名和密码
+
+ @param username username
+ @param password password
  */
 - (void)setAuthorizationHeaderFieldWithUsername:(NSString *)username
                                        password:(NSString *)password;
@@ -199,6 +273,11 @@ forHTTPHeaderField:(NSString *)field;
 
 /**
  HTTP methods for which serialized requests will encode parameters as a query string. `GET`, `HEAD`, and `DELETE` by default.
+ */
+
+/**
+ HTTP请求请求的方式的集合
+ 默认里面是GET HEAD DELETE
  */
 @property (nonatomic, strong) NSSet <NSString *> *HTTPMethodsEncodingParametersInURI;
 
@@ -280,6 +359,34 @@ forHTTPHeaderField:(NSString *)field;
 /**
  The `AFMultipartFormData` protocol defines the methods supported by the parameter in the block argument of `AFHTTPRequestSerializer -multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:`.
  */
+/** 
+ AFMultipartFormData封装对HTTP的请求体数据
+ 
+ 正常的POST请求，使用表单数据提交以下是请求内容
+ 
+ //////////////////////////  请求头内容 //////////////////////
+ 
+ POST / HTTP/1.1
+ Host: localhost
+ Content-Type: multipart/form-data; boundary=Boundary+6D3E56AA6EAA83B7
+ Cookie: access_log=7bde65268e2260bb0a85c7de2c67c468; BAIDUID=428D86FDBA6028DE2A5496BE3E7FC308:FG=1; BAINUOCUID=4368e1b7499c455dcd437da336ca1ca9feb8f57d; BDUSS=Ecwa3NvN1NjNWhsVGxWZktFfkc2bzJxQjZ3RFJpTFBiUzZqZUJZU0ZTSmZsN0ZXQVFBQUFBJCQAAAAAAAAAAAEAAABxbLRYWXV1dXV3dXV1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF8KilZfCopWR; bn_na_copid=60139b4b2ba75706fc384d987c2e4007; bn_na_ctag=W3siayI6Imljb25fMSIsInMiOiJ0dWFuIiwidiI6IjMyNiIsInQiOiIxNDUxODg2OTE0In1d; channel=user_center%7C%7C; channel_content=; channel_webapp=webapp; condition=6.0.3; domainUrl=sh; na_qab=6be39bfce918bb7b51887412e009faa6; UID=1488219249
+ Connection: keep-alive
+ Accept: -/-  这里把"*"代替成了-
+ User-Agent: Bainuo/6.1.0 (iPhone; iOS 9.0; Scale/2.00)
+ Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
+ Content-Length: 22207
+ Accept-Encoding: gzip, deflate
+
+ //////////////////////////  请求体内容 //////////////////////
+ 
+ --Boundary+6D3E56AA6EAA83B7 /// 开始
+ Content-Disposition: form-data; name="app_version"
+
+ 6.1.0
+ --Boundary+6D3E56AA6EAA83B7
+ 
+ 
+ **/
 @protocol AFMultipartFormData
 
 /**

@@ -22,12 +22,20 @@
 #import "AFURLSessionManager.h"
 #import <objc/runtime.h>
 
+/** 判断是否是iOS8.0系统  **/
 #ifndef NSFoundationVersionNumber_iOS_8_0
 #define NSFoundationVersionNumber_With_Fixed_5871104061079552_bug 1140.11
 #else
 #define NSFoundationVersionNumber_With_Fixed_5871104061079552_bug NSFoundationVersionNumber_iOS_8_0
 #endif
 
+
+/**
+ 这是一个常见的
+ 类似于    单例设计的方式
+ 让该方法只执行一次，保证了多线程调用还是安全的
+ 
+ **/
 static dispatch_queue_t url_session_manager_creation_queue() {
     static dispatch_queue_t af_url_session_manager_creation_queue;
     static dispatch_once_t onceToken;
@@ -38,11 +46,18 @@ static dispatch_queue_t url_session_manager_creation_queue() {
     return af_url_session_manager_creation_queue;
 }
 
+
 static void url_session_manager_create_task_safely(dispatch_block_t block) {
     if (NSFoundationVersionNumber < NSFoundationVersionNumber_With_Fixed_5871104061079552_bug) {
         // Fix of bug
         // Open Radar:http://openradar.appspot.com/radar?id=5871104061079552 (status: Fixed in iOS8)
         // Issue about:https://github.com/AFNetworking/AFNetworking/issues/2093
+        
+        /** 
+         处理在iOS8系统中， 并发创建了多个NSURLSessionDataTask对象
+         用sync，因为是想要主线程等在这，等执行完，在返回，保证dataTask必须有值
+         **/
+        
         dispatch_sync(url_session_manager_creation_queue(), block);
     } else {
         block();
@@ -445,11 +460,17 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
 @interface AFURLSessionManager ()
 @property (readwrite, nonatomic, strong) NSURLSessionConfiguration *sessionConfiguration;
+/** 为 NSURLSession 绑定的队列  **/
 @property (readwrite, nonatomic, strong) NSOperationQueue *operationQueue;
+    
 @property (readwrite, nonatomic, strong) NSURLSession *session;
+    
 @property (readwrite, nonatomic, strong) NSMutableDictionary *mutableTaskDelegatesKeyedByTaskIdentifier;
+    
 @property (readonly, nonatomic, copy) NSString *taskDescriptionForSessionTasks;
+    
 @property (readwrite, nonatomic, strong) NSLock *lock;
+    
 @property (readwrite, nonatomic, copy) AFURLSessionDidBecomeInvalidBlock sessionDidBecomeInvalid;
 @property (readwrite, nonatomic, copy) AFURLSessionDidReceiveAuthenticationChallengeBlock sessionDidReceiveAuthenticationChallenge;
 @property (readwrite, nonatomic, copy) AFURLSessionDidFinishEventsForBackgroundURLSessionBlock didFinishEventsForBackgroundURLSession;
@@ -479,27 +500,37 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
         return nil;
     }
 
-    if (!configuration) {
+    if (!configuration) {   /// 如果没有设置configuration,则使用默认的的设置
         configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
     }
 
     self.sessionConfiguration = configuration;
 
+    
+    /** 
+        为NSURLSession 绑定一个队列。并且设置这个队列的最大并发数maxConcurrentOperationCount为1.
+     **/
     self.operationQueue = [[NSOperationQueue alloc] init];
     self.operationQueue.maxConcurrentOperationCount = 1;
 
     self.session = [NSURLSession sessionWithConfiguration:self.sessionConfiguration delegate:self delegateQueue:self.operationQueue];
 
-    self.responseSerializer = [AFJSONResponseSerializer serializer];
+    self.responseSerializer = [AFJSONResponseSerializer serializer];    /// 默认使用 JSON格式
+    
+    self.securityPolicy = [AFSecurityPolicy defaultPolicy];     /// 设置默认的 安全策略
 
-    self.securityPolicy = [AFSecurityPolicy defaultPolicy];
-
+    
+    
 #if !TARGET_OS_WATCH
+    /** 
+        初始化网络状态监控管理者
+     **/
     self.reachabilityManager = [AFNetworkReachabilityManager sharedManager];
 #endif
 
     self.mutableTaskDelegatesKeyedByTaskIdentifier = [[NSMutableDictionary alloc] init];
 
+    /** 初始化锁  */
     self.lock = [[NSLock alloc] init];
     self.lock.name = AFURLSessionManagerLockName;
 
@@ -582,6 +613,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
               downloadProgress:(nullable void (^)(NSProgress *downloadProgress)) downloadProgressBlock
              completionHandler:(void (^)(NSURLResponse *response, id responseObject, NSError *error))completionHandler
 {
+    
     AFURLSessionManagerTaskDelegate *delegate = [[AFURLSessionManagerTaskDelegate alloc] initWithTask:dataTask];
     delegate.manager = self;
     delegate.completionHandler = completionHandler;
@@ -721,10 +753,18 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
                              downloadProgress:(nullable void (^)(NSProgress *downloadProgress)) downloadProgressBlock
                             completionHandler:(nullable void (^)(NSURLResponse *response, id _Nullable responseObject,  NSError * _Nullable error))completionHandler {
 
+                                
     __block NSURLSessionDataTask *dataTask = nil;
+    /** 
+        iOS8以下因系统会并发创建多个task对象，所以会导致我们创建出来的taskId和我们的任务会有多个，
+        就会产生多个task对象执行同一个任务,因此在这里需要作一个只执行一遍的操作,类似于我们创建单例的对象一样
+     **/
+                                
     url_session_manager_create_task_safely(^{
         dataTask = [self.session dataTaskWithRequest:request];
     });
+                                
+                                
 
     [self addDelegateForDataTask:dataTask uploadProgress:uploadProgressBlock downloadProgress:downloadProgressBlock completionHandler:completionHandler];
 
