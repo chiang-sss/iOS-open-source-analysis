@@ -30,6 +30,11 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  The `AFImageCache` protocol defines a set of APIs for adding, removing and fetching images from a cache synchronously.
  */
+
+/**
+ 定义统一的ImageCache的协议
+ 定义存放图片，获取图片，删除所有图片缓存等基本功能
+ */
 @protocol AFImageCache <NSObject>
 
 /**
@@ -37,6 +42,13 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param image The image to cache.
  @param identifier The unique identifier for the image in the cache.
+ */
+
+/**
+ 通过identifier添加一张image
+
+ @param image      image
+ @param identifier 唯一的identifier
  */
 - (void)addImage:(UIImage *)image withIdentifier:(NSString *)identifier;
 
@@ -47,12 +59,28 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return A BOOL indicating whether or not the image was removed from the cache.
  */
+
+
+/**
+ 
+ 通过identifier移除一张image
+
+ @param identifier identifier
+
+ @return 是否已经移除
+ */
 - (BOOL)removeImageWithIdentifier:(NSString *)identifier;
 
 /**
  Removes all images from the cache.
 
  @return A BOOL indicating whether or not all images were removed from the cache.
+ */
+
+/**
+ 移除所有的Image
+
+ @return 是否已经移除
  */
 - (BOOL)removeAllImages;
 
@@ -64,6 +92,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return An image for the matching identifier, or nil.
  */
 - (nullable UIImage *)imageWithIdentifier:(NSString *)identifier;
+
 @end
 
 
@@ -90,6 +119,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The unique URL request identifing the image asset.
  @param identifier The additional identifier to apply to the URL request to identify the image.
  */
+
+/**
+ 通过request与identifier添加一张image图片
+
+ @param image      image
+ @param request    request
+ @param identifier identifier
+ */
 - (void)addImage:(UIImage *)image forRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
 /**
@@ -100,6 +137,15 @@ NS_ASSUME_NONNULL_BEGIN
  
  @return A BOOL indicating whether or not all images were removed from the cache.
  */
+
+/**
+ 通过request与identifier移除UIImage对象
+
+ @param request    request
+ @param identifier identifier
+
+ @return 移除成功或失败的标志位
+ */
 - (BOOL)removeImageforRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
 /**
@@ -109,6 +155,15 @@ NS_ASSUME_NONNULL_BEGIN
  @param identifier The additional identifier to apply to the URL request to identify the image.
 
  @return An image for the matching request and identifier, or nil.
+ */
+
+/**
+ 通过request与identifier获取UIImage对象
+
+ @param request    request
+ @param identifier identifier
+
+ @return UIImage对象
  */
 - (nullable UIImage *)imageforRequest:(NSURLRequest *)request withAdditionalIdentifier:(nullable NSString *)identifier;
 
@@ -122,15 +177,27 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  The total memory capacity of the cache in bytes.
  */
+
+/**
+ 总内存容量
+ */
 @property (nonatomic, assign) UInt64 memoryCapacity;
 
 /**
  The preferred memory usage after purge in bytes. During a purge, images will be purged until the memory capacity drops below this limit.
  */
+
+/**
+ 当清空时优先保存的容量
+ */
 @property (nonatomic, assign) UInt64 preferredMemoryUsageAfterPurge;
 
 /**
  The current total memory usage in bytes of all images stored within the cache.
+ */
+
+/**
+ 当前已使用的容量
  */
 @property (nonatomic, assign, readonly) UInt64 memoryUsage;
 

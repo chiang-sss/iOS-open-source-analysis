@@ -25,10 +25,10 @@
 #import "AFURLSessionManager.h"
 
 typedef NS_ENUM(NSInteger, AFNetworkActivityManagerState) {
-    AFNetworkActivityManagerStateNotActive,
-    AFNetworkActivityManagerStateDelayingStart,
-    AFNetworkActivityManagerStateActive,
-    AFNetworkActivityManagerStateDelayingEnd
+    AFNetworkActivityManagerStateNotActive,     /// 未激活
+    AFNetworkActivityManagerStateDelayingStart, /// 激活前的延时阶段
+    AFNetworkActivityManagerStateActive,        /// 激活
+    AFNetworkActivityManagerStateDelayingEnd    /// 取消激活前的延时阶段
 };
 
 static NSTimeInterval const kDefaultAFNetworkActivityManagerActivationDelay = 1.0;

@@ -41,6 +41,12 @@ NS_ASSUME_NONNULL_BEGIN
  See the Apple Human Interface Guidelines section about the Network Activity Indicator for more information:
  http://developer.apple.com/library/iOS/#documentation/UserExperience/Conceptual/MobileHIG/UIElementGuidelines/UIElementGuidelines.html#//apple_ref/doc/uid/TP40006556-CH13-SW44
  */
+
+/**
+ 通过NS_EXTENSION_UNAVAILABLE_IOS告知用户
+ 此类无法扩展
+ 
+ **/
 NS_EXTENSION_UNAVAILABLE_IOS("Use view controller based solutions where appropriate instead.")
 @interface AFNetworkActivityIndicatorManager : NSObject
 
@@ -54,7 +60,7 @@ NS_EXTENSION_UNAVAILABLE_IOS("Use view controller based solutions where appropri
 /**
  A Boolean value indicating whether the network activity indicator manager is currently active.
 */
-@property (readonly, nonatomic, assign, getter=isNetworkActivityIndicatorVisible) BOOL networkActivityIndicatorVisible;
+@property (readonly, nonatomic, assign, getter = isNetworkActivityIndicatorVisible) BOOL networkActivityIndicatorVisible;
 
 /**
  A time interval indicating the minimum duration of networking activity that should occur before the activity indicator is displayed. The default value 1 second. If the network activity indicator should be displayed immediately when network activity occurs, this value should be set to 0 seconds.
@@ -63,6 +69,10 @@ NS_EXTENSION_UNAVAILABLE_IOS("Use view controller based solutions where appropri
 
  > Display the network activity indicator to provide feedback when your app accesses the network for more than a couple of seconds. If the operation finishes sooner than that, you don’t have to show the network activity indicator, because the indicator is likely to disappear before users notice its presence.
 
+ */
+
+/**
+ 这个激活延时
  */
 @property (nonatomic, assign) NSTimeInterval activationDelay;
 

@@ -128,11 +128,17 @@ typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id re
 
 @interface AFURLSessionManagerTaskDelegate : NSObject <NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 - (instancetype)initWithTask:(NSURLSessionTask *)task;
+
 @property (nonatomic, weak) AFURLSessionManager *manager;
+
 @property (nonatomic, strong) NSMutableData *mutableData;
+
 @property (nonatomic, strong) NSProgress *uploadProgress;
+
 @property (nonatomic, strong) NSProgress *downloadProgress;
+
 @property (nonatomic, copy) NSURL *downloadFileURL;
+
 @property (nonatomic, copy) AFURLSessionDownloadTaskDidFinishDownloadingBlock downloadTaskDidFinishDownloading;
 @property (nonatomic, copy) AFURLSessionTaskProgressBlock uploadProgressBlock;
 @property (nonatomic, copy) AFURLSessionTaskProgressBlock downloadProgressBlock;
