@@ -5,8 +5,10 @@ const util = require("util");
 
 const server = http.createServer((request, response) => {
           
+          
+//         "content-type" : "text/html;charset=utf-8"
     response.writeHead(200, {
-        "content-type" : "text/html;charset=utf-8"
+        "content-type" : "application/json;charset=utf-8"
     });
     if (request.url == '/favicon.ico') {
         response.write("");
